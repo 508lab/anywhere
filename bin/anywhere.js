@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 
 var os = require('os');
 var fs = require('fs');
@@ -91,9 +90,11 @@ var getIPAddress = function () {
 
 var log = debug('anywhere');
 
+
 var app = connect();
 app.use(function (req, res, next) {
   res.setHeader("Access-Control-Allow-Origin", "*");
+
   if (argv.log) {
     log(req.method + ' ' + req.url);
   }
@@ -105,8 +106,11 @@ if (argv.fallback !== undefined) {
     index: argv.fallback || '/index.html'
   }));
 }
+
 app.use(serveStatic(argv.dir, { 'index': ['index.html'] }));
-app.use(serveIndex(argv.dir, { 'icons': true }));
+
+var defaultTemplate = path.join(__dirname, '../public', 'directory.html');
+app.use(serveIndex(argv.dir, { 'icons': 'https://508laboratory.github.io/favicon.png', template: defaultTemplate }));
 
 // anywhere --proxy webpack.config.js
 // anywhere --proxy proxy.config.js
