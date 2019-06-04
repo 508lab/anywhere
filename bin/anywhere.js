@@ -11,11 +11,8 @@ var serveStatic = require('serve-static');
 var serveIndex = require('serve-index');
 var fallback = require('connect-history-api-fallback');
 var proxy = require('http-proxy-middleware');
-
-
 var debug = require('debug');
 debug.enable('anywhere');
-
 var exec = require('child_process').exec;
 var spawn = require('child_process').spawn;
 var argv = require("minimist")(process.argv.slice(2), {
@@ -35,6 +32,7 @@ var argv = require("minimist")(process.argv.slice(2), {
     'dir': process.cwd()
   }
 });
+
 
 if (argv.help) {
   console.log("Usage:");
@@ -90,11 +88,10 @@ var getIPAddress = function () {
 
 var log = debug('anywhere');
 
-
 var app = connect();
+
 app.use(function (req, res, next) {
   res.setHeader("Access-Control-Allow-Origin", "*");
-
   if (argv.log) {
     log(req.method + ' ' + req.url);
   }
@@ -106,6 +103,31 @@ if (argv.fallback !== undefined) {
     index: argv.fallback || '/index.html'
   }));
 }
+
+/**
+ * 根据url中参数生成对象
+ * @param {*} url 
+ */
+function createObjByurl(url) {
+  url = url.slice(2, url.length);
+  var arr = url.split('&');
+  var obj = {};
+  arr.map((e) => {
+    var element = e.split('=');
+    obj[element[0]] = element[1];
+  });
+  return obj;
+}
+
+app.use('/login', function (req, res) {
+  var obj = createObjByurl(req.url);
+  if (obj && obj.password === '123465') {
+    res.end('ok');
+  } else {
+    res.end('err');
+  }
+})
+
 
 app.use(serveStatic(argv.dir, { 'index': ['index.html'] }));
 
@@ -149,6 +171,8 @@ var secure = port + 1;
 
 var hostname = argv.hostname || getIPAddress();
 
+
+
 http.createServer(app).listen(port, function () {
   // 忽略80端口
   port = (port != 80 ? ':' + port : '');
@@ -159,13 +183,22 @@ http.createServer(app).listen(port, function () {
   }
 });
 
-var options = {
-  key: fs.readFileSync(path.join(__dirname, '../keys', 'key.pem')),
-  cert: fs.readFileSync(path.join(__dirname, '../keys', 'cert.pem'))
-};
+var isOpenHttps = false;
 
-https.createServer(options, app).listen(secure, function () {
-  secure = (secure != 80 ? ':' + secure : '');
-  var url = "https://" + hostname + secure + '/';
-  console.log("Also running at " + url);
-});
+/**
+ * 是否开启https
+ */
+if (isOpenHttps) {
+  var options = {
+    key: fs.readFileSync(path.join(__dirname, '../keys', 'key.pem')),
+    cert: fs.readFileSync(path.join(__dirname, '../keys', 'cert.pem'))
+  };
+
+  https.createServer(options, app).listen(secure, function () {
+    secure = (secure != 80 ? ':' + secure : '');
+    var url = "https://" + hostname + secure + '/';
+    console.log("Also running at " + url);
+  });
+}
+
+
