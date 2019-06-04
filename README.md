@@ -37,8 +37,8 @@ $ node ./bin/anywhere.js --help
 Usage:
   node ./bin/anywhere.js --help // print help information
   node ./bin/anywhere.js // 8000 as default port, current folder as root
-  node ./bin/anywhere.js 8888 // 8888 as port
-  node ./bin/anywhere.js -p 8989 // 8989 as port
+  node ./bin/anywhere.js 8888
+  node ./bin/anywhere.js -p 8989
   node ./bin/anywhere.js -s // don't open browser
   node ./bin/anywhere.js -h localhost // localhost as hostname
   node ./bin/anywhere.js -d /home // /home as root
