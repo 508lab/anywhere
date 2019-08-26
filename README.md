@@ -7,6 +7,7 @@ Running static file server Anywhere. 随时随地将你的当前目录变成一�
 - 添加目录加密访问
 - 修改默认样式
 - 默认关闭https
+- 如果在服务器上打开记得添加 -s 参数,不然会报错(-s 代表不需要打开浏览器).
 
 ## Installation
 
