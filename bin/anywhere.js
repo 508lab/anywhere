@@ -1,4 +1,3 @@
-
 var os = require('os');
 var fs = require('fs');
 var path = require('path');
@@ -7,7 +6,9 @@ var https = require('https');
 const { URL } = require('url');
 
 var connect = require('connect');
+var redirect = require('connect-redirection')
 var serveStatic = require('serve-static');
+var cookieSession = require('cookie-session');
 var serveIndex = require('serve-index');
 var fallback = require('connect-history-api-fallback');
 var proxy = require('http-proxy-middleware');
@@ -34,18 +35,19 @@ var argv = require("minimist")(process.argv.slice(2), {
 });
 
 
+
 if (argv.help) {
   console.log("Usage:");
-  console.log("  anywhere --help // print help information");
-  console.log("  anywhere // 8000 as default port, current folder as root");
-  console.log("  anywhere 8888 // 8888 as port");
-  console.log("  anywhere -p 8989 // 8989 as port");
-  console.log("  anywhere -s // don't open browser");
-  console.log("  anywhere -h localhost // localhost as hostname");
-  console.log("  anywhere -d /home // /home as root");
-  console.log("  anywhere -l // print log");
-  console.log("  anywhere -f // Enable history fallback");
-  console.log("  anywhere --proxy http://localhost:7000/api // Support shorthand URL, webpack.config.js or customize config file");
+  console.log("node anywhere.js--help // print help information");
+  console.log("node anywhere.js // 8000 as default port, current folder as root");
+  console.log("node anywhere.js 8888 // 8888 as port");
+  console.log("node anywhere.js-p 8989 // 8989 as port");
+  console.log("node anywhere.js-s // don't open browser");
+  console.log("node anywhere.js-h localhost // localhost as hostname");
+  console.log("node anywhere.js-d /home // /home as root");
+  console.log("node anywhere.js-l // print log");
+  console.log("node anywhere.js-f // Enable history fallback");
+  console.log("node anywhere.js--proxy http://localhost:7000/api // Support shorthand URL, webpack.config.js or customize config file");
   process.exit(0);
 }
 
@@ -90,12 +92,42 @@ var log = debug('anywhere');
 
 var app = connect();
 
-app.use(function (req, res, next) {
+
+app.use(cookieSession({
+  name: 'session',
+  keys: ['schizobulia']
+}))
+
+app.use('/login', function (req, res) {
+  fs.readFile(path.join(__dirname, '../public', 'login.html'), { encoding: "utf-8" }, function (err, msg) {
+    if (!err) {
+      res.end(msg);
+    }
+  });
+})
+
+app.use('/l', function (req, res) {
+  var obj = createObjByurl(req.url);
+  if (obj && obj.password === '123456') {
+    req.session.login = 1;
+    res.end('1');
+  } else {
+    req.session.login = 0;
+    res.end('0');
+  }
+})
+
+app.use(redirect()).use(function (req, res, next) {
+  let obj = req.session.login;
   res.setHeader("Access-Control-Allow-Origin", "*");
+  if (!obj) {
+    res.redirect('/login');
+    return;
+  }
   if (argv.log) {
     log(req.method + ' ' + req.url);
   }
-  next();
+  next();  
 });
 if (argv.fallback !== undefined) {
   console.log('Enable html5 history mode.');
@@ -119,14 +151,9 @@ function createObjByurl(url) {
   return obj;
 }
 
-app.use('/login', function (req, res) {
-  var obj = createObjByurl(req.url);
-  if (obj && obj.password === '123465') {
-    res.end('ok');
-  } else {
-    res.end('err');
-  }
-})
+
+
+
 
 
 app.use(serveStatic(argv.dir, { 'index': ['index.html'] }));
