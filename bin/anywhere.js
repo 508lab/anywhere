@@ -3,10 +3,10 @@ var fs = require('fs');
 var path = require('path');
 var http = require('http');
 var https = require('https');
-const { URL } = require('url');
-
+var { URL } = require('url');
 var connect = require('connect');
-var redirect = require('connect-redirection')
+var bodyParser = require('body-parser');
+var conf = require('./conf');
 var serveStatic = require('serve-static');
 var cookieSession = require('cookie-session');
 var serveIndex = require('serve-index');
@@ -33,7 +33,7 @@ var argv = require("minimist")(process.argv.slice(2), {
     'dir': process.cwd()
   }
 });
-
+var api = require('./api')(argv);
 
 
 if (argv.help) {
@@ -89,72 +89,21 @@ var getIPAddress = function () {
 };
 
 var log = debug('anywhere');
-
 var app = connect();
 
+app.use(bodyParser.urlencoded({extended: false}));
 
-app.use(cookieSession({
-  name: 'session',
-  keys: ['schizobulia']
-}))
+app.use(cookieSession(conf.session));
 
-app.use('/login', function (req, res) {
-  fs.readFile(path.join(__dirname, '../public', 'login.html'), { encoding: "utf-8" }, function (err, msg) {
-    if (!err) {
-      res.end(msg);
-    }
-  });
-})
+app.use(api);
 
-app.use('/l', function (req, res) {
-  var obj = createObjByurl(req.url);
-  if (obj && obj.password === '123456') {
-    req.session.login = 1;
-    res.end('1');
-  } else {
-    req.session.login = 0;
-    res.end('0');
-  }
-})
 
-app.use(redirect()).use(function (req, res, next) {
-  let obj = req.session.login;
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  if (!obj) {
-    res.redirect('/login');
-    return;
-  }
-  if (argv.log) {
-    log(req.method + ' ' + req.url);
-  }
-  next();  
-});
 if (argv.fallback !== undefined) {
   console.log('Enable html5 history mode.');
   app.use(fallback({
     index: argv.fallback || '/index.html'
   }));
 }
-
-/**
- * 根据url中参数生成对象
- * @param {*} url 
- */
-function createObjByurl(url) {
-  url = url.slice(2, url.length);
-  var arr = url.split('&');
-  var obj = {};
-  arr.map((e) => {
-    var element = e.split('=');
-    obj[element[0]] = element[1];
-  });
-  return obj;
-}
-
-
-
-
-
 
 app.use(serveStatic(argv.dir, { 'index': ['index.html'] }));
 
@@ -201,7 +150,6 @@ var hostname = argv.hostname || getIPAddress();
 
 
 http.createServer(app).listen(port, function () {
-  // 忽略80端口
   port = (port != 80 ? ':' + port : '');
   var url = "http://" + hostname + port + '/';
   console.log("Running at " + url);
@@ -213,7 +161,7 @@ http.createServer(app).listen(port, function () {
 var isOpenHttps = false;
 
 /**
- * 是否开启https
+ * Whether open https
  */
 if (isOpenHttps) {
   var options = {
@@ -227,5 +175,6 @@ if (isOpenHttps) {
     console.log("Also running at " + url);
   });
 }
+
 
 

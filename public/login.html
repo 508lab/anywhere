@@ -25,14 +25,17 @@
         $('#login').click(function () {
             var password = $('#password').val();
             $.ajax({
-                url: '/l?password=' + password,
-                method: 'get',
+                url: '/login',
+                method: 'post',
                 dataType: 'json',
-                success: function (data) {
-                    if (data != '1') {
-                        alert("密码不正确,无法进入本站!!");
-                    }else{
+                data: {
+                    password: password
+                },
+                success: function (res) {
+                    if (res.data) {
                         window.location.href = window.location.origin;
+                    }else{
+                        alert("密码不正确,无法进入本站!!");
                     }
                 },
             });
