@@ -7,6 +7,7 @@ var middleware = require('./middleware');
 var jwt = require('jsonwebtoken');
 var url = require('url');
 var qs = require('querystring');
+var multiparty = require('multiparty');
 var conf = require('./conf');
 
 /**
@@ -21,14 +22,14 @@ module.exports = function (argv) {
         var auth = req.headers.authorization;
         if (auth && jwt.verify(auth.split('Bearer ')[1], conf.token.secret)) {
             //If token exists, use token authentication first
-        }else{
+        } else {
             let obj = req.session.login;
             if (!obj && req.url !== '/login' && !req.url.includes('/api/v1')) {
                 res.redirect('/login');
                 return;
             }
         }
-        
+
         next();
     })
 
@@ -77,6 +78,36 @@ module.exports = function (argv) {
                 data: 'no such file or directory',
             }));
         }
+    })
+
+    /**
+     * upload files
+     */
+    router.post('/api/v1/path', function (req, res) {
+        var arg = url.parse(req.url).query;
+        var path = qs.parse(arg)['q'] || '';
+        var form = new multiparty.Form();
+        form.encoding = 'utf-8';
+        let uploadPath = argv.dir + path;
+        if (!fs.existsSync(uploadPath)) {
+            fs.mkdirSync(uploadPath);
+        }
+        form.uploadDir = uploadPath;
+        // form.maxFilesSize = 2 * 1024 * 1024;
+        // form.maxFields = 1000;  
+        form.parse(req, function (err, fields, files) {
+            for (const key in files) {
+                if (files.hasOwnProperty(key)) {
+                    const file = files[key][0];
+                    fs.renameSync(file.path, uploadPath + '/' + file.originalFilename);
+                }
+            }
+            res.writeHead(200, { 'content-type': 'application/json' });
+            res.end(JSON.stringify({
+                status: 200,
+                data: 'ok'
+            }));
+        });
     })
 
     return router;

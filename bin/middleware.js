@@ -1,11 +1,13 @@
 var jwt = require('jsonwebtoken');
 var conf = require('./conf');
 
-function setErrRes(result, error) {
+function setErrRes(result, error, res) {
     if (error.message === 'invalid signature') {
+        res.writeHead(401, { 'content-type': 'application/json;charset=UTF-8' });
         result.code = 401;
         result.err = error.message;
     } else if (error.message === `Cannot read property 'split' of undefined`) {
+        res.writeHead(401, { 'content-type': 'application/json;charset=UTF-8' });
         result.code = 401;
         result.data = 'no token detected in http header "Authorization"';
     } else {
@@ -33,7 +35,7 @@ module.exports = function (req, res, next) {
             tag = true;
         } catch (error) {
             tag = false;
-            setErrRes(result, error);
+            setErrRes(result, error, res);
             res.end(JSON.stringify(result));
         }
     }
