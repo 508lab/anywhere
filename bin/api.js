@@ -68,9 +68,11 @@ module.exports = function (argv) {
         var path = qs.parse(arg)['q'] || '';
         try {
             var arr = fs.readdirSync(argv.dir + path);
+            var dirs = arr.filter((ele) => { return ele.isDirectory() });
+            var files = arr.filter((ele) => { return !ele.isDirectory() });
             res.end(JSON.stringify({
                 status: 200,
-                data: arr,
+                data: [dirs, files],
             }));
         } catch (error) {
             res.end(JSON.stringify({
