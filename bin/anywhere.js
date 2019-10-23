@@ -1,22 +1,22 @@
-var os = require('os');
-var fs = require('fs');
-var path = require('path');
-var http = require('http');
-var https = require('https');
-var { URL } = require('url');
-var connect = require('connect');
-var bodyParser = require('body-parser');
-var conf = require('./conf');
-var serveStatic = require('serve-static');
-var cookieSession = require('cookie-session');
-var serveIndex = require('serve-index');
-var fallback = require('connect-history-api-fallback');
-var proxy = require('http-proxy-middleware');
-var debug = require('debug');
+const os = require('os');
+const fs = require('fs');
+const path = require('path');
+const http = require('http');
+const https = require('https');
+const { URL } = require('url');
+const connect = require('connect');
+const bodyParser = require('body-parser');
+const conf = require('./conf');
+const serveStatic = require('serve-static');
+const cookieSession = require('cookie-session');
+const serveIndex = require('serve-index');
+const fallback = require('connect-history-api-fallback');
+const proxy = require('http-proxy-middleware');
+const debug = require('debug');
 debug.enable('anywhere');
-var exec = require('child_process').exec;
-var spawn = require('child_process').spawn;
-var argv = require("minimist")(process.argv.slice(2), {
+const exec = require('child_process').exec;
+const spawn = require('child_process').spawn;
+const argv = require("minimist")(process.argv.slice(2), {
   alias: {
     'silent': 's',
     'port': 'p',
@@ -33,7 +33,7 @@ var argv = require("minimist")(process.argv.slice(2), {
     'dir': process.cwd()
   }
 });
-var api = require('./api')(argv);
+const api = require('./api')(argv);
 
 
 if (argv.help) {
@@ -51,7 +51,7 @@ if (argv.help) {
   process.exit(0);
 }
 
-var openURL = function (url) {
+const openURL = function (url) {
   switch (process.platform) {
     case "darwin":
       exec('open ' + url);
@@ -74,10 +74,10 @@ var openURL = function (url) {
  * Get ip(v4) address
  * @return {String} the ipv4 address or 'localhost'
  */
-var getIPAddress = function () {
-  var ifaces = os.networkInterfaces();
-  var ip = '';
-  for (var dev in ifaces) {
+const getIPAddress = function () {
+  let ifaces = os.networkInterfaces();
+  let ip = '';
+  for (let dev in ifaces) {
     ifaces[dev].forEach(function (details) {
       if (ip === '' && details.family === 'IPv4' && !details.internal) {
         ip = details.address;
@@ -88,8 +88,8 @@ var getIPAddress = function () {
   return ip || "127.0.0.1";
 };
 
-var log = debug('anywhere');
-var app = connect();
+const log = debug('anywhere');
+let app = connect();
 
 app.use(bodyParser.urlencoded({extended: false}));
 
@@ -107,7 +107,7 @@ if (argv.fallback !== undefined) {
 
 app.use(serveStatic(argv.dir, { 'index': ['index.html'] }));
 
-var defaultTemplate = path.join(__dirname, '../public', 'directory.html');
+const defaultTemplate = path.join(__dirname, '../public', 'directory.html');
 app.use(serveIndex(argv.dir, { 'icons': 'https://508laboratory.github.io/favicon.png', template: defaultTemplate }));
 
 // anywhere --proxy webpack.config.js
@@ -116,11 +116,11 @@ app.use(serveIndex(argv.dir, { 'icons': 'https://508laboratory.github.io/favicon
 if (argv.proxy) {
   try {
     // if url
-    var url = new URL(argv.proxy);
+    let url = new URL(argv.proxy);
     app.use(proxy(url.toString(), { changeOrigin: true }));
   } catch (e) {
     // if config file
-    var config = require(path.resolve(argv.dir, argv.proxy));
+    let config = require(path.resolve(argv.dir, argv.proxy));
     // support webpack-dev-server proxy options
     try {
       config = config.devServer.proxy;
@@ -129,9 +129,9 @@ if (argv.proxy) {
         log(e);
       }
     }
-    var contexts = Object.keys(config);
+    let contexts = Object.keys(config);
     contexts.forEach(context => {
-      var options = config[context];
+      let options = config[context];
       app.use(proxy(context, options));
     });
   }
@@ -142,36 +142,36 @@ if (argv.proxy) {
 // anywhere 8888 -s // silent
 // anywhere -h localhost
 // anywhere -d /home
-var port = parseInt(argv._[0] || argv.port, 10);
-var secure = port + 1;
+let port = parseInt(argv._[0] || argv.port, 10);
+let secure = port + 1;
 
-var hostname = argv.hostname || getIPAddress();
+let hostname = argv.hostname || getIPAddress();
 
 
 
 http.createServer(app).listen(port, function () {
   port = (port != 80 ? ':' + port : '');
-  var url = "http://" + hostname + port + '/';
+  let url = "http://" + hostname + port + '/';
   console.log("Running at " + url);
   if (!argv.silent) {
     openURL(url);
   }
 });
 
-var isOpenHttps = false;
+let isOpenHttps = false;
 
 /**
  * Whether open https
  */
 if (isOpenHttps) {
-  var options = {
+  let options = {
     key: fs.readFileSync(path.join(__dirname, '../keys', 'key.pem')),
     cert: fs.readFileSync(path.join(__dirname, '../keys', 'cert.pem'))
   };
 
   https.createServer(options, app).listen(secure, function () {
     secure = (secure != 80 ? ':' + secure : '');
-    var url = "https://" + hostname + secure + '/';
+    let url = "https://" + hostname + secure + '/';
     console.log("Also running at " + url);
   });
 }

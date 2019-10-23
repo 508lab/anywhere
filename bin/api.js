@@ -1,14 +1,15 @@
-var Router = require('router');
-var fs = require('fs');
-var path = require('path');
-var redirect = require('connect-redirection')
-var router = Router();
-var middleware = require('./middleware');
-var jwt = require('jsonwebtoken');
-var url = require('url');
-var qs = require('querystring');
-var multiparty = require('multiparty');
-var conf = require('./conf');
+const Router = require('router');
+const fs = require('fs');
+const path = require('path');
+const redirect = require('connect-redirection')
+const router = Router();
+const middleware = require('./middleware');
+const jwt = require('jsonwebtoken');
+const url = require('url');
+const qs = require('querystring');
+const multiparty = require('multiparty');
+const FileHound = require('filehound');
+const conf = require('./conf');
 
 /**
  * api
@@ -19,7 +20,7 @@ module.exports = function (argv) {
             return;
         }
         res.setHeader("Access-Control-Allow-Origin", "*");
-        var auth = req.headers.authorization;
+        let auth = req.headers.authorization;
         if (auth && jwt.verify(auth.split('Bearer ')[1], conf.token.secret)) {
             //If token exists, use token authentication first
         } else {
@@ -48,7 +49,7 @@ module.exports = function (argv) {
      * login api
      */
     router.post('/login', function (req, res) {
-        var obj = req.body;
+        let obj = req.body;
         let result = { status: 200 };
         if (obj && obj.password === conf.password) {
             req.session.login = 1;
@@ -64,15 +65,18 @@ module.exports = function (argv) {
      * Gets files and folders in the directory
      */
     router.get('/api/v1/path', function (req, res) {
-        var arg = url.parse(req.url).query;
-        var path = qs.parse(arg)['q'] || '';
+        let arg = url.parse(req.url).query;
+        let path = qs.parse(arg)['q'] || '';
         try {
-            var arr = fs.readdirSync(argv.dir + path, { withFileTypes: true });
-            var dirs = arr.filter((ele) => { return ele.isDirectory() });
-            var files = arr.filter((ele) => { return !ele.isDirectory() });
+            let arr = fs.readdirSync(argv.dir + path, { withFileTypes: true });
+            let dirs = arr.filter((ele) => { return ele.isDirectory() });
+            let files = arr.filter((ele) => { return !ele.isDirectory() });
             res.end(JSON.stringify({
                 status: 200,
-                data: [dirs, files],
+                data: {
+                    d: dirs,
+                    f: files
+                }
             }));
         } catch (error) {
             res.end(JSON.stringify({
@@ -86,9 +90,9 @@ module.exports = function (argv) {
      * upload files
      */
     router.post('/api/v1/path', function (req, res) {
-        var arg = url.parse(req.url).query;
-        var path = qs.parse(arg)['q'] || '';
-        var form = new multiparty.Form();
+        let arg = url.parse(req.url).query;
+        let path = qs.parse(arg)['q'] || '';
+        let form = new multiparty.Form();
         form.encoding = 'utf-8';
         let uploadPath = argv.dir + path;
         if (!fs.existsSync(uploadPath)) {
@@ -110,6 +114,37 @@ module.exports = function (argv) {
                 data: 'ok'
             }));
         });
+    })
+
+
+    /**
+     * search api
+     */
+    router.get('/api/v1/search', function (req, res) {
+        let arg = url.parse(req.url).query;
+        let path = qs.parse(arg)['path'] || '';
+        let q = qs.parse(arg)['q'] || '';
+
+        let files = FileHound.create()
+            .paths(argv.dir + path)
+            .match(`*${q}*`)
+            .findSync();
+
+        let dirs = FileHound.create()
+            .paths(argv.dir + path)
+            .directory()
+            .match(`*${q}*`)
+            .findSync();
+        files = files.map((e) => { return e.slice((argv.dir + path).length, e.length); });
+        dirs = dirs.map((e) => { return e.slice((argv.dir + path).length, e.length); });
+        res.writeHead(200, { 'content-type': 'application/json' });
+        res.end(JSON.stringify({
+            status: 200,
+            data: {
+                d: dirs,
+                f: files
+            }
+        }));
     })
 
     return router;

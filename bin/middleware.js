@@ -1,5 +1,5 @@
-var jwt = require('jsonwebtoken');
-var conf = require('./conf');
+const jwt = require('jsonwebtoken');
+const conf = require('./conf');
 
 function setErrRes(result, error, res) {
     if (error.message === 'invalid signature') {
@@ -23,14 +23,14 @@ module.exports = function (req, res, next) {
     let result = {
         code: 200,
     };
-    var auth = req.headers.authorization;
+    let auth = req.headers.authorization;
 
     /**
      * External interface verification
      */
     if (req.url.includes('/api/v1')) {
         try {
-            var authorization = auth.split('Bearer ')[1]
+            const authorization = auth.split('Bearer ')[1]
             jwt.verify(authorization, conf.token.secret);
             tag = true;
         } catch (error) {
