@@ -18,7 +18,7 @@ function setErrRes(result, error, res) {
 /**
  * middleware
  */
-module.exports = function (req, res, next) {
+module.exports = function(req, res, next) {
     let tag = true;
     let result = {
         code: 200,

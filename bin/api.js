@@ -14,15 +14,15 @@ const conf = require('./conf');
 /**
  * api
  */
-module.exports = function (argv) {
-    router.use(redirect()).use(function (req, res, next) {
+module.exports = function(argv) {
+    router.use(redirect()).use(function(req, res, next) {
         if (!middleware(req, res, next)) {
             return;
         }
         res.setHeader("Access-Control-Allow-Origin", "*");
         let auth = req.headers.authorization;
-        if (auth && jwt.verify(auth.split('Bearer ')[1], conf.token.secret)) {
-            //If token exists, use token authentication first
+        if (!req.url.includes('/api/v1') || auth && jwt.verify(auth.split('Bearer ')[1], conf.token.secret)) {
+
         } else {
             let obj = req.session.login;
             if (!obj && req.url !== '/login' && !req.url.includes('/api/v1')) {
@@ -37,8 +37,8 @@ module.exports = function (argv) {
     /**
      * The login page
      */
-    router.get('/login', function (req, res) {
-        fs.readFile(path.join(__dirname, '../public', 'login.html'), { encoding: "utf-8" }, function (err, msg) {
+    router.get('/login', function(req, res) {
+        fs.readFile(path.join(__dirname, '../public', 'login.html'), { encoding: "utf-8" }, function(err, msg) {
             if (!err) {
                 res.end(msg);
             }
@@ -48,7 +48,7 @@ module.exports = function (argv) {
     /**
      * login api
      */
-    router.post('/login', function (req, res) {
+    router.post('/login', function(req, res) {
         let obj = req.body;
         let result = { status: 200 };
         if (obj && obj.password === conf.password) {
@@ -64,7 +64,7 @@ module.exports = function (argv) {
     /**
      * Gets files and folders in the directory
      */
-    router.get('/api/v1/path', function (req, res) {
+    router.get('/api/v1/path', function(req, res) {
         let arg = url.parse(req.url).query;
         let path = qs.parse(arg)['q'] || '';
         try {
@@ -89,7 +89,7 @@ module.exports = function (argv) {
     /**
      * upload files
      */
-    router.post('/api/v1/path', function (req, res) {
+    router.post('/api/v1/path', function(req, res) {
         let arg = url.parse(req.url).query;
         let path = qs.parse(arg)['q'] || '';
         let form = new multiparty.Form();
@@ -101,7 +101,7 @@ module.exports = function (argv) {
         form.uploadDir = uploadPath;
         // form.maxFilesSize = 2 * 1024 * 1024;
         // form.maxFields = 1000;  
-        form.parse(req, function (err, fields, files) {
+        form.parse(req, function(err, fields, files) {
             for (const key in files) {
                 if (files.hasOwnProperty(key)) {
                     const file = files[key][0];
@@ -120,7 +120,7 @@ module.exports = function (argv) {
     /**
      * search api
      */
-    router.get('/api/v1/search', function (req, res) {
+    router.get('/api/v1/search', function(req, res) {
         let arg = url.parse(req.url).query;
         let path = qs.parse(arg)['path'] || '';
         let q = qs.parse(arg)['q'] || '';
